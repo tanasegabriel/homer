@@ -116,6 +116,7 @@ import DarkMode from "./components/DarkMode.vue";
 import DynamicTheme from "./components/DynamicTheme.vue";
 
 import defaultConfig from "./assets/defaults.yml?raw";
+import fetchOptions from "@/utils/fetchOptions.js";
 
 export default {
   name: "App",
@@ -205,8 +206,8 @@ export default {
         this.createStylesheet(stylesheet);
       }
     },
-    getConfig: function (path = "assets/config.yml") {
-      return fetch(path).then((response) => {
+    getConfig: function (path = "assets/config.yml", options = {}) {
+      return fetch(path, options).then((response) => {
         if (response.status == 404 || response.redirected) {
           this.configNotFound = true;
           return {};
@@ -224,7 +225,13 @@ export default {
           })
           .then(function (config) {
             if (config.externalConfig) {
-              return that.getConfig(config.externalConfig);
+              // The external config is often served by the same authentication
+              // proxy as the services, so it needs the same credentials. They
+              // come from the local file, the only config available this early.
+              return that.getConfig(
+                config.externalConfig,
+                fetchOptions(config.proxy),
+              );
             }
             return config;
           });

@@ -15,7 +15,8 @@ copied into the config file.
 # See https://fontawesome.com/search for icons options
 
 # Optional: Use external configuration file.
-# Using this will ignore remaining config in this file
+# Using this will ignore remaining config in this file, except `proxy`, which is
+# read from here to fetch it (see the proxy section below).
 # externalConfig: https://example.com/server-luci/config.yaml
 
 title: "App dashboard"
