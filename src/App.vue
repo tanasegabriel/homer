@@ -106,6 +106,8 @@
 import { parse } from "yaml";
 import merge from "lodash.merge";
 
+import fetchOptions from "@/utils/fetchOptions.js";
+
 import Navbar from "./components/Navbar.vue";
 import GetStarted from "./components/GetStarted.vue";
 import ConnectivityChecker from "./components/ConnectivityChecker.vue";
@@ -206,8 +208,11 @@ export default {
         this.createStylesheet(stylesheet);
       }
     },
-    getConfig: function (path = "assets/config.yml") {
-      return fetch(path).then((response) => {
+    getConfig: function (source = "assets/config.yml") {
+      const target = typeof source === "string" ? { url: source } : source;
+      const options = fetchOptions({ item: target });
+
+      return fetch(target.url, options).then((response) => {
         if (response.status == 404 || response.redirected) {
           this.configNotFound = true;
           return {};

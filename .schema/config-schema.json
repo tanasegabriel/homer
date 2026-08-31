@@ -200,6 +200,33 @@
       "additionalProperties": true,
       "title": "Headers"
     },
+    "ExternalConfig": {
+      "title": "ExternalConfig",
+      "description": "Use external configuration file. Using this will ignore remaining config in this file externalConfig: https://example.com/server-luci/config.yaml",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["url"],
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "useCredentials": {
+              "type": "boolean",
+              "description": "send cookies & authorization headers when fetching the external configuration file. `false` omits them, even same-origin."
+            },
+            "headers": {
+              "$ref": "#/definitions/Headers",
+              "description": "send custom headers when fetching the external configuration file."
+            }
+          }
+        }
+      ]
+    },
     "Service": {
       "type": "object",
       "additionalProperties": false,
@@ -280,8 +307,7 @@
   },
   "properties": {
     "externalConfig": {
-      "type": "string",
-      "description": "Use external configuration file. Using this will ignore remaining config in this file externalConfig: https://example.com/server-luci/config.yaml"
+      "$ref": "#/definitions/ExternalConfig"
     },
     "title": {
       "type": "string",

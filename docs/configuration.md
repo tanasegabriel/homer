@@ -17,6 +17,12 @@ copied into the config file.
 # Optional: Use external configuration file.
 # Using this will ignore remaining config in this file
 # externalConfig: https://example.com/server-luci/config.yaml
+# Object form, when it sits behind an authentication proxy (`proxy` below is ignored with the rest of this file):
+# externalConfig:
+#   url: https://example.com/server-luci/config.yaml
+#   useCredentials: true # Optional: send cookies & authorization headers. `false` omits them, even same-origin.
+#   headers: # Optional: send custom headers.
+#     Test: "Example"
 
 title: "App dashboard"
 subtitle: "Homer"
