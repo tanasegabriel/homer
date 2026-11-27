@@ -1,25 +1,72 @@
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "url";
 import fs from "fs";
-import path from "path";
-import process from "process";
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
 import { version } from "./package.json";
+import resolveMock from "./dummy-data/resolve.js";
+
+const DEMO_CONFIG = fileURLToPath(
+  new URL("./dummy-data/demo.yml", import.meta.url),
+);
 
 function writeVersionPlugin() {
   return {
     name: "write-version",
+    apply: "build",
     closeBundle() {
       fs.writeFileSync("dist/VERSION", version);
     },
   };
 }
 
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.setEncoding("utf8");
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => resolve(body));
+    req.on("error", reject);
+  });
+}
+
+function dummyDataPlugin(mode) {
+  const serve = ({ middlewares }) => {
+    middlewares.use(async (req, res, next) => {
+      const pathname = req.url?.split("?")[0];
+      const demoConfig = mode === "demo" && pathname === "/assets/config.yml";
+      const mock =
+        pathname === "/dummy-data" || pathname?.startsWith("/dummy-data/");
+      if (!demoConfig && !mock) {
+        next();
+        return;
+      }
+      try {
+        if (demoConfig) {
+          res.end(fs.readFileSync(DEMO_CONFIG));
+          return;
+        }
+        const body = await readBody(req);
+        const file = resolveMock(req.url, { method: req.method, body });
+        res.statusCode = file ? 200 : 404;
+        res.end(file ? fs.readFileSync(file) : "");
+      } catch (error) {
+        next(error);
+      }
+    });
+  };
+
+  return {
+    name: "dummy-data",
+    configureServer: serve,
+    configurePreviewServer: serve,
+  };
+}
+
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: "",
   build: {
     assetsDir: "resources",
@@ -29,25 +76,7 @@ export default defineConfig({
   },
   plugins: [
     writeVersionPlugin(),
-    // Custom plugin to serve dummy-data JSON files without sourcemap injection
-    {
-      name: "dummy-data-json-handler",
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          if (req.url?.startsWith("/dummy-data/")) {
-            // Remove query parameters from URL to get the actual file path
-            const urlWithoutQuery = req.url.split("?")[0];
-            const filePath = path.join(process.cwd(), urlWithoutQuery);
-
-            if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-              res.end(fs.readFileSync(filePath, "utf8"));
-              return;
-            }
-          }
-          next();
-        });
-      },
-    },
+    dummyDataPlugin(mode),
     vue(),
     VitePWA({
       registerType: "autoUpdate",
@@ -91,4 +120,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

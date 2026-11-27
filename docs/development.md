@@ -28,6 +28,8 @@ The `icon`, `subtitle`, `aside` and `badges` slots take richer content, each rep
 
 A card should surface an API failure exactly once: through its status chip if it has one, otherwise with a `connectionBadge()`.
 
+Ship a sample of the card's API in [`dummy-data/`](https://github.com/homer-dashboard/homer/blob/main/dummy-data/README.md) and add the card to `dummy-data/demo.yml`; `pnpm demo` shows every card on that data.
+
 ### Keeping cards consistent
 
 `pnpm lint` checks the above: a single `<Generic>` root, known slots, known `tone` / `state` values, no redeclared `item` prop, a declared `serverError`, requests going through `this.load()`, and no card restyling the shared chrome. Name a lookup table `_STATE` or `_TONE` in SCREAMING_CASE to have its values checked too.

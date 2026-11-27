@@ -1,0 +1,30 @@
+{
+  "issues": [
+    {
+      "ComicName": "Saga",
+      "IssueNumber": "67",
+      "IssueDate": "2026-12-03",
+      "Status": "Wanted"
+    },
+    {
+      "ComicName": "Monstress",
+      "IssueNumber": "56",
+      "IssueDate": "2026-12-10",
+      "Status": "Wanted"
+    },
+    {
+      "ComicName": "Paper Girls",
+      "IssueNumber": "31",
+      "IssueDate": "2026-12-17",
+      "Status": "Wanted"
+    }
+  ],
+  "annuals": [
+    {
+      "ComicName": "Saga Annual",
+      "IssueNumber": "1",
+      "IssueDate": "2026-12-24",
+      "Status": "Wanted"
+    }
+  ]
+}

@@ -6,7 +6,8 @@ This file provides guidance to AI Agents when working with code in this reposito
 
 ```bash
 pnpm install      # Install dependencies (PNPM enforced via packageManager)
-pnpm dev          # Start development server on http://localhost:3000
+pnpm dev          # Start development server on http://localhost:5173
+pnpm demo         # Start development server with every smart card on dummy-data (dummy-data/demo.yml)
 pnpm mock         # Start mock API server for testing service integrations
 pnpm build        # Build for production
 pnpm preview      # Preview production build
@@ -62,7 +63,7 @@ The mixin still accepts `checkInterval`, `downloadInterval`, `rateInterval`, `to
 
 ### Build System Details
 
-- **Vite 7**: Modern build tool with Vue plugin
+- **Vite 8**: Modern build tool with Vue plugin
 - **PWA**: Auto-updating service worker via `vite-plugin-pwa`
 - **SCSS**: Bulma framework with modular component styling
 - **Docker**: Multi-stage build (Node.js → Alpine + Lighttpd)
@@ -81,13 +82,16 @@ When creating mock data for service components testing:
 4. **Create/update JSON files**: Write realistic mock responses matching the expected data structure
 5. **Verify fields**: Ensure all fields used in the component's computed properties and templates are included
 6. **Update existing mocks**: If mock files exist but are missing fields, add the missing fields without removing existing data
+7. **Add the card to the demo**: Add an entry to `dummy-data/demo.yml` and check it with `pnpm demo`
 
 **Key Points**:
 
 - Component directory name should be lowercase version of component name (e.g., `AdGuardHome.vue` → `adguardhome/`)
 - Directory structure mirrors API endpoints exactly
 - Files contain JSON responses (no file extension needed)
-- Mock server serves from `dummy-data/` via `pnpm mock` command
+- An endpoint ending in `/`, or a path other mocks nest under, is a directory holding an `index.html` (e.g. `linkding/api/bookmarks/index.html`)
+- An XML-RPC call is served from `<path>/<methodName>` (e.g. `rtorrent/RPC2/download_list`)
+- `pnpm demo` serves `dummy-data/` on the same origin as the app; `pnpm mock` serves it on its own port, for `GET` requests only
 - Each component gets isolated directory to prevent API path conflicts
 - When updating existing mocks, preserve existing data and only add missing fields required by the component
 - Always read existing mock files first to understand current structure before making changes
@@ -98,7 +102,7 @@ When creating mock data for service components testing:
 
 ### Development Notes
 
-- Use `pnpm mock` to test service integrations with dummy data
+- Use `pnpm demo` to see every smart card on dummy data
 - Configuration changes require restart in development mode
 - New service components should follow the Generic component slot pattern
 - Themes use CSS custom properties for dynamic color switching
