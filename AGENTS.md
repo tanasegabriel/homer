@@ -12,6 +12,8 @@ pnpm mock         # Start mock API server for testing service integrations
 pnpm build        # Build for production
 pnpm preview      # Preview production build
 pnpm lint         # Run ESLint with auto-fix
+pnpm test         # Run the unit and card tests (Vitest)
+pnpm test:demo    # Render the built demo in headless Chrome and check every card loads (after pnpm build; set CHROME_BIN if Chrome is not google-chrome on PATH)
 ```
 
 ## Architecture Overview
@@ -103,6 +105,7 @@ When creating mock data for service components testing:
 ### Development Notes
 
 - Use `pnpm demo` to see every smart card on dummy data
+- Tests live in `tests/`, at the path of the file they cover (`src/utils/format.js` → `tests/utils/format.test.js`); `tests/components/services/cards.test.js` loads every card in `dummy-data/demo.yml` on its sample
 - Configuration changes require restart in development mode
 - New service components should follow the Generic component slot pattern
 - Themes use CSS custom properties for dynamic color switching

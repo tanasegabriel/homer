@@ -9,6 +9,8 @@
     "build": "vite build",
     "preview": "vite preview --port 5050",
     "lint": "eslint . --fix --cache",
+    "test": "vitest run",
+    "test:demo": "node tests/demo-smoke.mjs",
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
@@ -22,15 +24,18 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/test-utils": "^2.6.0",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "~10.9.2",
     "globals": "^17.11.0",
     "http-server": "^14.1.1",
+    "jsdom": "^31.0.1",
     "prettier": "^3.9.6",
     "sass-embedded": "^1.103.1",
     "vite": "^8.2.4",
     "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.1.2",
     "vue-eslint-parser": "^10.4.1"
   },
   "license": "Apache-2.0",

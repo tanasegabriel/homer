@@ -120,4 +120,10 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  test: {
+    environment: "jsdom",
+    include: ["tests/**/*.test.js"],
+    restoreMocks: true,
+    unstubGlobals: true,
+  },
 }));

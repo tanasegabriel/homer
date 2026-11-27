@@ -28,7 +28,7 @@ The `icon`, `subtitle`, `aside` and `badges` slots take richer content, each rep
 
 A card should surface an API failure exactly once: through its status chip if it has one, otherwise with a `connectionBadge()`.
 
-Ship a sample of the card's API in [`dummy-data/`](https://github.com/homer-dashboard/homer/blob/main/dummy-data/README.md) and add the card to `dummy-data/demo.yml`; `pnpm demo` shows every card on that data.
+Ship a sample of the card's API in [`dummy-data/`](https://github.com/homer-dashboard/homer/blob/main/dummy-data/README.md) and add the card to `dummy-data/demo.yml`; `pnpm demo` shows every card on that data, and `pnpm test` checks each one loads it without an error.
 
 ### Keeping cards consistent
 
