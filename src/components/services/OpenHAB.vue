@@ -1,22 +1,18 @@
 <template>
-  <Generic :item="item" :subtitle="details" :status="status" />
+  <Generic :item="item" :subtitle="details" :status="reachabilityStatus()" />
 </template>
 
 <script>
 import service from "@/mixins/service.js";
+import { displayCount } from "@/utils/format.js";
 
 export default {
   name: "OpenHAB",
   mixins: [service],
   data: () => ({
-    status: null,
-    things: {
-      count: 0,
-      online: 0,
-    },
-    items: {
-      count: 0,
-    },
+    things: null,
+    items: null,
+    serverError: null,
   }),
   computed: {
     headers: function () {
@@ -27,66 +23,56 @@ export default {
       };
     },
     details: function () {
+      if (this.serverError) {
+        return null;
+      }
+
       const details = [];
 
-      if (this.item.things) {
+      if (this.item.things && this.things) {
         details.push(
-          `${this.things.count} things (${this.things.online} Online)`,
+          `${displayCount(this.things.count, "thing")} (${this.things.online} Online)`,
         );
       }
 
-      if (this.item.items) {
-        details.push(`${this.items.count} items`);
+      if (this.item.items && this.items) {
+        details.push(displayCount(this.items.count, "item"));
       }
 
-      return details.join(", ");
+      return details.join(", ") || null;
     },
   },
   methods: {
     fetchData: function () {
-      return this.fetchServerStatus().then(() => {
-        if (this.item.subtitle || this.status?.state === "offline") {
-          return;
-        }
-        return this.fetchServerStats();
-      });
-    },
-    fetchServerStatus: async function () {
-      const headers = this.headers;
-      return this.fetch("/rest/systeminfo", { headers })
-        .then((response) => {
-          if (response && response.systemInfo)
-            this.status = { state: "online", label: "running" };
-          else throw new Error();
-        })
-        .catch((e) => {
-          console.error(e);
-          this.status = { state: "offline", label: "dead" };
-        });
-    },
-    fetchServerStats: async function () {
       const headers = this.headers;
 
-      if (this.item.things) {
-        const data = await this.fetch("/rest/things?summary=true", {
-          headers,
-        }).catch((e) => {
-          console.error(e);
-        });
-
-        this.things.count = data.length;
-        this.things.online = data.filter(
-          (e) => e.statusInfo.status === "ONLINE",
-        ).length;
-      }
-
-      if (this.item.items) {
-        const data = await this.fetch("/rest/items", { headers }).catch((e) => {
-          console.error(e);
-        });
-
-        this.items.count = data.length;
-      }
+      return this.load(
+        this.fetch("/rest/systeminfo", { headers }).then((response) => {
+          if (!response?.systemInfo) {
+            throw new Error("Unexpected answer from /rest/systeminfo");
+          }
+          if (this.item.subtitle) {
+            return;
+          }
+          return Promise.all([
+            this.item.things &&
+              this.fetch("/rest/things?summary=true", { headers }).then(
+                (things) => {
+                  this.things = {
+                    count: things.length,
+                    online: things.filter(
+                      (thing) => thing.statusInfo.status === "ONLINE",
+                    ).length,
+                  };
+                },
+              ),
+            this.item.items &&
+              this.fetch("/rest/items", { headers }).then((items) => {
+                this.items = { count: items.length };
+              }),
+          ]);
+        }),
+      );
     },
   },
 };

@@ -1,6 +1,6 @@
 <template>
   <Generic :item="item" :badges="badges">
-    <template v-if="versionstring" #subtitle>
+    <template v-if="versionstring && !serverError" #subtitle>
       {{ displayVersion(versionstring) }}
       <i
         v-for="icon in visibleIcons"

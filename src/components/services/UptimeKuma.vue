@@ -4,6 +4,7 @@
 
 <script>
 import service from "@/mixins/service.js";
+import { displayPercent } from "@/utils/format.js";
 
 const PAGE_STATE = {
   good: "online",
@@ -36,7 +37,7 @@ export default {
       return (
         this.state && {
           state: PAGE_STATE[this.state],
-          label: `${this.uptime}%`,
+          label: displayPercent(this.uptime),
         }
       );
     },
@@ -73,7 +74,7 @@ export default {
       return result;
     },
     statusMessage: function () {
-      if (!this.incident) {
+      if (this.serverError || !this.incident) {
         return "";
       }
       if (this.incident.incident) {
@@ -98,11 +99,11 @@ export default {
     },
     uptime: function () {
       if (!this.heartbeat) {
-        return 0;
+        return null;
       }
       const data = Object.values(this.heartbeat.uptimeList);
       const percent = data.reduce((a, b) => a + b, 0) / data.length || 0;
-      return (percent * 100).toFixed(1);
+      return percent * 100;
     },
   },
   methods: {

@@ -1,6 +1,6 @@
 <template>
   <Generic :item="item" :badges="badges">
-    <template #subtitle>
+    <template v-if="!serverError && dl !== null" #subtitle>
       <span class="is-family-monospace mr-3">
         <i class="fas fa-download"></i>
         {{ downRate }}

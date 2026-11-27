@@ -208,7 +208,7 @@ The `libraryType` configuration let you choose which stats to show.
   logo: "assets/tools/sample.png"
   url: https://my-service.url
   apikey: "<---insert-api-key-here--->"
-  libraryType: "music" # Choose which stats to show. Can be one of: music, series or movies.
+  libraryType: "music" # Choose which stats to show. Can be one of: music, series or movies, or a list such as ["movies", "series"].
   # legacyAuth: false # (Optional) Force the authorization scheme. Auto-detected from the server version by default.
 ```
 
@@ -298,7 +298,7 @@ Displays the number of outstanding messages and system health status.
 - name: "Gotify"
   type: "Gotify"
   url: https://my-service.url
-  apikey: "<---insert-client-token-here--->"
+  apikey: "<---insert-client-token-here--->" # Optional: without it, only the health status is shown.
 ```
 
 **API Token**: Use a **client token** (not an app token).
@@ -689,7 +689,7 @@ Displays info about your local PiHole instance right on your Homer dashboard.
 ## Ping
 
 Checks if the target link is available and displays the round trip time (RTT) of the request.
-By default the HEAD method is used but it can be configured to use GET using the optional `method` property.
+By default the HEAD method is used but it can be configured to use GET or OPTIONS using the optional `method` property.
 Optionally, use `successCodes` to define which HTTP response status codes should be considered as available status.
 
 ```yaml

@@ -1,6 +1,6 @@
 <template>
   <Generic :item="item" :badges="badges">
-    <template #subtitle>
+    <template v-if="!serverError && dl !== null" #subtitle>
       <span class="is-family-monospace mr-3">
         <i class="fas fa-download"></i> {{ downRate }}
       </span>
@@ -15,6 +15,7 @@
 import service from "@/mixins/service.js";
 import { displayRate } from "@/utils/format.js";
 
+// card-contract: off fetch -- XML-RPC on a separate host, which needs its own POST transport
 export default {
   name: "RTorrent",
   mixins: [service],

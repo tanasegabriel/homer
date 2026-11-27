@@ -42,7 +42,7 @@ export default {
         await this.load(
           this.fetch(
             `/api/greader.php/accounts/ClientLogin?Email=${this.item.username}&Passwd=${this.item.password}`,
-            { method: "GET", cache: "no-cache" },
+            { method: "GET" },
             false,
           ).then((body) => {
             const match = body.match(/Auth=(([([a-z0-9]+)\/([([a-z0-9]+))/i);

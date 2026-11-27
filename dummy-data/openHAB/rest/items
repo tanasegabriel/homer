@@ -1,0 +1,8 @@
+[
+  { "type": "Switch", "name": "LivingRoom_Lamp", "label": "Living Room Lamp", "state": "ON" },
+  { "type": "Dimmer", "name": "LivingRoom_Lamp_Brightness", "label": "Brightness", "state": "80" },
+  { "type": "Number", "name": "Outdoor_Temperature", "label": "Outdoor Temperature", "state": "12.4" },
+  { "type": "Number", "name": "Outdoor_Humidity", "label": "Outdoor Humidity", "state": "71" },
+  { "type": "Contact", "name": "Garage_Door", "label": "Garage Door", "state": "CLOSED" },
+  { "type": "String", "name": "Weather_Condition", "label": "Condition", "state": "Cloudy" }
+]

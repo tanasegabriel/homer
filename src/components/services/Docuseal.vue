@@ -1,7 +1,7 @@
 <template>
   <Generic
     :item="item"
-    :subtitle="displayVersion(versionstring)"
+    :subtitle="serverError ? null : displayVersion(versionstring)"
     :status="reachabilityStatus()"
   />
 </template>
@@ -21,11 +21,8 @@ export default {
   methods: {
     displayVersion,
     fetchData: function () {
-      const params = {
-        cache: "no-cache",
-      };
       return this.load(
-        this.fetch("/version", params, false).then((response) => {
+        this.fetch("/version", {}, false).then((response) => {
           this.versionstring = response;
         }),
       );

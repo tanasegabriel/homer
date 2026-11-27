@@ -5,8 +5,28 @@ export function capCount(value, max = 99) {
   return typeof value === "number" && value > max ? `${max}+` : value;
 }
 
+export function displayCount(count, noun, plural = `${noun}s`) {
+  return `${count} ${count === 1 ? noun : plural}`;
+}
+
 export function displayVersion(version) {
   return version ? `Version ${version}` : null;
+}
+
+export function displayPercent(value, fractionDigits = 1) {
+  return Number.isFinite(value) ? `${value.toFixed(fractionDigits)}%` : null;
+}
+
+export function displayLatency(milliseconds, fractionDigits = 1) {
+  return Number.isFinite(milliseconds)
+    ? `${milliseconds.toFixed(fractionDigits)} ms`
+    : null;
+}
+
+export function displayTemperature(value, unit = "°C", fractionDigits = 1) {
+  return Number.isFinite(value)
+    ? `${value.toFixed(fractionDigits)} ${unit}`
+    : null;
 }
 
 export function displayRate(bytesPerSecond) {

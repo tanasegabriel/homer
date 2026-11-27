@@ -30,7 +30,7 @@ A card should surface an API failure exactly once: through its status chip if it
 
 ### Keeping cards consistent
 
-`pnpm lint` checks the above: a single `<Generic>` root, known slots, known `tone` / `state` values, no redeclared `item` prop, a declared `serverError`, and no card restyling the shared chrome. Name a lookup table `_STATE` or `_TONE` in SCREAMING_CASE to have its values checked too.
+`pnpm lint` checks the above: a single `<Generic>` root, known slots, known `tone` / `state` values, no redeclared `item` prop, a declared `serverError`, requests going through `this.load()`, and no card restyling the shared chrome. Name a lookup table `_STATE` or `_TONE` in SCREAMING_CASE to have its values checked too.
 
 These are defaults, not walls. A card that needs to step outside names the checks it drops and why, in the template or the `<script>`:
 
@@ -38,7 +38,7 @@ These are defaults, not walls. A card that needs to step outside names the check
 <!-- card-contract: off structure -- the protection toggle needs its own markup -->
 ```
 
-Groups: `structure` (root and slots), `vocabulary` (`tone` and `state`), `mixin` (the `item` prop and helper names), `errors` (failure reporting), `style` (shared chrome). Naming none turns everything off. The reason is required, and a malformed marker or an unknown group exempts nothing.
+Groups: `structure` (root and slots), `vocabulary` (`tone` and `state`), `mixin` (the `item` prop and helper names), `fetch` (no native `fetch()`), `errors` (failure reporting), `style` (shared chrome). Naming none turns everything off. The reason is required, and a malformed marker or an unknown group exempts nothing.
 
 Prefer one group over all of them, and leave `vocabulary` on: it is what keeps a colour meaning the same thing on every card.
 
@@ -49,15 +49,16 @@ Any service consuming an API must use the [`service`](https://github.com/homer-d
 - **URL**: `path` is appended to the service endpoint (`item.endpoint`, or `item.url`), so it only needs the part that follows it.
 - **Headers**: pass the service ones (an API key, an `Authorization` header, ...) as `init.headers`. The mixin layers them over the user's `proxy.headers` and item `headers`, so never read those yourself. If both set the same header, the service value wins.
 - **Credentials**: `proxy.useCredentials` and its per-item override are applied for you.
+- **Caching**: responses are always revalidated with the server.
 - **Response**: returned as parsed JSON, or as text when `json` is `false`.
 - **Loading**: name the loading method `fetchData()`. The mixin calls it once when the card is created.
 - **Refresh**: cards then refresh on the `updateIntervalMs` schedule. A card with nothing worth re-fetching declares `autoUpdate: false` and is never polled, which keeps background requests down on a full dashboard (see `Gitea`). To pick the method at runtime, set `this.autoUpdateMethod` in the card's own `created()` (see `PiHole`).
 - **Errors**: wrap the requests in `this.load(...)`, which logs any failure and sets `this.serverError`. Declare `serverError: null` in `data`; `null` means "not loaded yet".
-- **Card helpers**: `reachabilityStatus()` and `connectionBadge()` build the chip and error pill from `serverError`; `requireConfig("apikey")` and `isValueShown(key)` complete the mixin.
-- **Formatting**: `capCount(value, max)`, `displayVersion(version)`, `displayRate(bytesPerSecond)`, `displaySize(bytes)` and `displayDuration(seconds)` live in [`@/utils/format.js`](https://github.com/homer-dashboard/homer/blob/main/src/utils/format.js), not on the mixin, which holds no logic about what a card displays. They are pure functions, so import them where you need them. A template cannot see an import, so a card calling one from its markup exposes it through `methods` (see `OctoPrint` or `Traefik`).
+- **Card helpers**: `reachabilityStatus()` and `connectionBadge()` build the chip and error pill from `serverError`; `optional(request)` resolves to `null` instead of failing the card, for a request that can fail on a healthy service (see `OctoPrint`); `requireConfig("apikey")` and `isValueShown(key)` complete the mixin.
+- **Formatting**: `capCount(value, max)`, `displayCount(count, noun, plural)`, `displayVersion(version)`, `displayPercent(value, fractionDigits)`, `displayLatency(milliseconds, fractionDigits)`, `displayTemperature(value, unit, fractionDigits)`, `displayRate(bytesPerSecond)`, `displaySize(bytes)` and `displayDuration(seconds)` live in [`@/utils/format.js`](https://github.com/homer-dashboard/homer/blob/main/src/utils/format.js), not on the mixin, which holds no logic about what a card displays. They are pure functions, so import them where you need them. A template cannot see an import, so a card calling one from its markup exposes it through `methods` (see `OctoPrint` or `Traefik`).
 
 > [!NOTE]
-> Some services cannot use `this.fetch`: `OpenWeather` talks to a third-party public API and `Rtorrent` to an XML-RPC host. `Rtorrent` still uses the mixin for everything else, so follow it if you need a custom transport. `OpenWeather` uses none of it and is not a model for anything.
+> Some services cannot use `this.fetch`: `OpenWeather` talks to a third-party public API and `Rtorrent` to an XML-RPC host. Both still use the mixin for everything else and declare `card-contract: off fetch` with that reason. Follow `Rtorrent` if you need a custom transport.
 
 ### Skeleton
 

@@ -1,6 +1,6 @@
 <template>
-  <Generic :item="weatherItem" :class="{ 'component-error': error }">
-    <template v-if="icon" #icon>
+  <Generic :item="weatherItem" :badges="badges">
+    <template v-if="icon && !serverError" #icon>
       <div class="card-icon" :class="item.background">
         <figure class="image">
           <img
@@ -11,33 +11,38 @@
         </figure>
       </div>
     </template>
-    <template #subtitle>
-      <template v-if="error">Fail to load weather information</template>
-      <template v-else>
-        <span>{{ temperature }}</span>
-        <span class="location-time">{{ locationTime }}</span>
-      </template>
+    <template v-if="!serverError && temp !== null" #subtitle>
+      <span>{{ temperature }}</span>
+      <span class="location-time">{{ locationTime }}</span>
     </template>
-    <template v-if="error" #aside>⚠️</template>
   </Generic>
 </template>
 
 <script>
+import service from "@/mixins/service.js";
+import { displayTemperature } from "@/utils/format.js";
+
+const CLOCK_TICK_MS = 15 * 1000;
+
+// card-contract: off fetch -- a third-party public API, which must not receive the proxy or item headers
 export default {
   name: "OpenWeather",
-  props: {
-    item: Object,
-  },
+  mixins: [service],
+  autoUpdate: false,
   data: () => ({
     id: null,
     icon: null,
     name: null,
     temp: null,
     conditions: null,
-    error: false,
     timezoneOffset: 0,
+    now: Date.now(),
+    serverError: null,
   }),
   computed: {
+    badges: function () {
+      return [this.connectionBadge()];
+    },
     weatherItem: function () {
       const item = { ...this.item };
       delete item.background;
@@ -46,25 +51,28 @@ export default {
       return item;
     },
     temperature: function () {
-      if (!this.temp) return "";
-
       let unit = "K";
       if (this.item.units === "metric") {
         unit = "°C";
       } else if (this.item.units === "imperial") {
         unit = "°F";
       }
-      return `${this.temp} ${unit}`;
+      return displayTemperature(this.temp, unit);
     },
     locationTime: function () {
-      return this.calcTime(this.timezoneOffset);
+      return this.calcTime(this.timezoneOffset, this.now);
     },
   },
-  created() {
-    this.fetchWeather();
+  mounted() {
+    this.clock = setInterval(() => {
+      this.now = Date.now();
+    }, CLOCK_TICK_MS);
+  },
+  beforeUnmount() {
+    clearInterval(this.clock);
   },
   methods: {
-    fetchWeather: async function () {
+    fetchData: function () {
       let locationQuery;
 
       // Use location ID if specified, otherwise retrieve value from location (name).
@@ -80,29 +88,27 @@ export default {
       if (this.item.endpoint) {
         url = this.item.endpoint;
       }
-      fetch(url)
-        .then((response) => {
-          if (!response.ok) {
-            throw Error(response.statusText);
-          }
-          return response.json();
-        })
-        .then((weather) => {
-          this.id = weather.id;
-          this.name = weather.name;
-          this.temp = parseInt(weather.main.temp).toFixed(1);
-          this.icon = weather.weather[0].icon;
-          this.conditions = weather.weather[0].description;
-          this.timezoneOffset = weather.timezone;
-        })
-        .catch((e) => {
-          console.error(e);
-          this.name = this.item.name;
-          this.error = true;
-        });
+
+      return this.load(
+        fetch(url)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(response.statusText);
+            }
+            return response.json();
+          })
+          .then((weather) => {
+            this.id = weather.id;
+            this.name = weather.name;
+            this.temp = Number(weather.main.temp);
+            this.icon = weather.weather[0].icon;
+            this.conditions = weather.weather[0].description;
+            this.timezoneOffset = weather.timezone;
+          }),
+      );
     },
-    calcTime: (offset) => {
-      const localTime = new Date();
+    calcTime: (offset, now) => {
+      const localTime = new Date(now);
       const utcTime =
         localTime.getTime() + localTime.getTimezoneOffset() * 60000;
       const calculatedTime = new Date(utcTime + 1000 * offset);

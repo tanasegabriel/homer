@@ -10,10 +10,10 @@ export default {
   mixins: [service],
   data: () => {
     return {
-      total: 0,
-      connected: 0,
-      newdevices: 0,
-      downalert: 0,
+      total: null,
+      connected: null,
+      newdevices: null,
+      downalert: null,
       serverError: null,
     };
   },

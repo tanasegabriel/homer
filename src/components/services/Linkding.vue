@@ -1,20 +1,33 @@
 <template>
-  <Generic v-for="bookmark in bookmarks" :key="bookmark.name" :item="bookmark">
-  </Generic>
+  <Generic
+    v-if="serverError && !bookmarks.length"
+    v-bind="$attrs"
+    :item="item"
+    :status="reachabilityStatus()"
+  />
+  <template v-else>
+    <Generic
+      v-for="bookmark in bookmarks"
+      :key="bookmark.url"
+      v-bind="$attrs"
+      :item="bookmark"
+    />
+  </template>
 </template>
 
 <script>
 import service from "@/mixins/service.js";
-import Generic from "./Generic.vue";
 
+const SHARED_OPTIONS = ["target", "tagstyle", "background"];
+
+// card-contract: off structure -- one card per bookmark, each given the classes Homer puts on the card through $attrs
 export default {
   name: "Linkding",
-  components: {
-    Generic,
-  },
   mixins: [service],
+  inheritAttrs: false,
   data: () => ({
     bookmarks: [],
+    serverError: null,
   }),
   computed: {
     calculatedLimit: function () {
@@ -23,35 +36,36 @@ export default {
     },
   },
   methods: {
-    fetchData: async function () {
+    fetchData: function () {
       const headers = {
         Authorization: `Token ${this.item.token}`,
         Accept: "application/json",
       };
+      const query = this.item.query
+        ? `&q=${encodeURIComponent(this.item.query)}`
+        : "";
 
-      let query = "";
-      if (this.item.query) {
-        query = `&q=${encodeURIComponent(this.item.query)}`;
-      }
-
-      let url = `/api/bookmarks/?limit=${this.calculatedLimit}${query}`;
-
-      this.fetch(url, {
-        headers,
-      })
-        .then((ld_response) => {
-          this.bookmarks = ld_response.results.map((bookmark) => ({
-            name: `${bookmark.title}`,
-            subtitle: `${bookmark.description}`,
-            url: bookmark.url,
-            target: this.item.target,
-            logo: `${bookmark.favicon_url}`,
-            tag: `${bookmark.tag_names.join(" #")}`,
-          }));
-        })
-        .catch((e) => {
-          console.error(e);
-        });
+      return this.load(
+        this.fetch(`/api/bookmarks/?limit=${this.calculatedLimit}${query}`, {
+          headers,
+        }).then((response) => {
+          this.bookmarks = response.results.map(this.bookmarkItem);
+        }),
+      );
+    },
+    bookmarkItem: function (bookmark) {
+      const shared = Object.fromEntries(
+        SHARED_OPTIONS.map((key) => [key, this.item[key]]),
+      );
+      return {
+        ...shared,
+        name: bookmark.title || bookmark.website_title || bookmark.url,
+        subtitle: bookmark.description || bookmark.website_description,
+        url: bookmark.url,
+        logo: bookmark.favicon_url || this.item.logo,
+        icon: bookmark.favicon_url ? undefined : this.item.icon,
+        tag: bookmark.tag_names.join(" #"),
+      };
     },
   },
 };

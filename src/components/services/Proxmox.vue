@@ -1,21 +1,14 @@
 <template>
   <Generic :item="item" :badges="badges">
-    <template v-if="vms" #subtitle>
-      <div v-if="loading">
-        <strong>Loading...</strong>
-      </div>
-      <div v-else-if="serverError">
-        <strong class="danger">Error loading info</strong>
-      </div>
+    <template v-if="serverError === false" #subtitle>
       <div
-        v-else
         class="metrics"
         :class="{
           'is-size-7-mobile': item.small_font_on_small_screens,
           'is-small': item.small_font_on_desktop,
         }"
       >
-        <span v-if="isValueShown('vms')" class="margined"
+        <span v-if="isValueShown('vms') && vms" class="margined"
           >VMs:
           <span class="is-number"
             ><span class="has-text-weight-bold">{{ vms.running }}</span
@@ -24,7 +17,7 @@
             ></span
           ></span
         >
-        <span v-if="isValueShown('lxcs') && lxcs.total" class="margined"
+        <span v-if="isValueShown('lxcs') && lxcs?.total" class="margined"
           >LXCs:
           <span class="is-number"
             ><span class="has-text-weight-bold">{{ lxcs.running }}</span
@@ -38,7 +31,7 @@
           <span
             class="has-text-weight-bold is-number"
             :class="statusClass(diskUsed)"
-            >{{ diskUsed }}%</span
+            >{{ displayPercent(diskUsed, decimals) }}</span
           ></span
         >
         <span v-if="isValueShown('mem')" class="margined"
@@ -46,7 +39,7 @@
           <span
             class="has-text-weight-bold is-number"
             :class="statusClass(memoryUsed)"
-            >{{ memoryUsed }}%</span
+            >{{ displayPercent(memoryUsed, decimals) }}</span
           ></span
         >
         <span v-if="isValueShown('cpu')" class="margined"
@@ -54,97 +47,80 @@
           <span
             class="has-text-weight-bold is-number"
             :class="statusClass(cpuUsed)"
-            >{{ cpuUsed }}%</span
+            >{{ displayPercent(cpuUsed, decimals) }}</span
           ></span
         >
       </div>
-    </template>
-    <template v-if="loading" #aside>
-      <i class="fa fa-circle-notch fa-spin fa-2xl"></i>
     </template>
   </Generic>
 </template>
 
 <script>
 import service from "@/mixins/service.js";
+import { displayPercent } from "@/utils/format.js";
 
 export default {
   name: "Proxmox",
   mixins: [service],
   data: () => ({
-    vms: {
-      total: 0,
-      running: 0,
-    },
-    lxcs: {
-      total: 0,
-      running: 0,
-    },
+    vms: null,
+    lxcs: null,
     memoryUsed: 0,
     diskUsed: 0,
     cpuUsed: 0,
     serverError: null,
-    loading: true,
   }),
   computed: {
     badges() {
       return [this.connectionBadge()];
     },
+    options() {
+      return { headers: { Authorization: this.item.api_token } };
+    },
+    decimals() {
+      return this.item.hide_decimals ? 0 : 1;
+    },
   },
   methods: {
+    displayPercent,
     statusClass(value) {
-      if (value > this.item.danger_value) return "danger";
-      if (value > this.item.warning_value) return "warning";
+      const shown = Number(value.toFixed(this.decimals));
+      if (shown > this.item.danger_value) return "danger";
+      if (shown > this.item.warning_value) return "warning";
       return "healthy";
     },
     fetchData: async function () {
-      try {
-        const options = {
-          headers: {
-            Authorization: this.item.api_token,
-          },
-        };
-        const status = await this.fetch(
-          `/api2/json/nodes/${this.item.node}/status`,
-          options,
-        );
-        // main metrics:
-        const decimalsToShow = this.item.hide_decimals ? 0 : 1;
-        this.memoryUsed = (
-          (status.data.memory.used * 100) /
-          status.data.memory.total
-        ).toFixed(decimalsToShow);
-        this.diskUsed = (
-          (status.data.rootfs.used * 100) /
-          status.data.rootfs.total
-        ).toFixed(decimalsToShow);
-        this.cpuUsed = (status.data.cpu * 100).toFixed(decimalsToShow);
-        // vms:
-        if (this.isValueShown("vms")) {
-          const vms = await this.fetch(
-            `/api2/json/nodes/${this.item.node}/qemu`,
-            options,
-          );
-          this.parseVMsAndLXCs(vms, this.vms);
-        }
-        // lxc containers:
-        if (this.isValueShown("lxcs")) {
-          const lxcs = await this.fetch(
-            `/api2/json/nodes/${this.item.node}/lxc`,
-            options,
-          );
-          this.parseVMsAndLXCs(lxcs, this.lxcs);
-        }
-        this.serverError = false;
-      } catch (err) {
-        console.error(err);
-        this.serverError = true;
+      await this.load(this.fetchNode());
+      if (!this.serverError) {
+        await Promise.all([
+          this.fetchGuests("vms", "qemu"),
+          this.fetchGuests("lxcs", "lxc"),
+        ]);
       }
-      this.loading = false;
     },
-    parseVMsAndLXCs(items, value) {
-      value.total = items.data.length;
-      value.running = items.data.filter((i) => i.status === "running").length;
+    fetchNode: async function () {
+      const status = await this.fetch(
+        `/api2/json/nodes/${this.item.node}/status`,
+        this.options,
+      );
+      this.memoryUsed =
+        (status.data.memory.used * 100) / status.data.memory.total;
+      this.diskUsed =
+        (status.data.rootfs.used * 100) / status.data.rootfs.total;
+      this.cpuUsed = status.data.cpu * 100;
+    },
+    fetchGuests: async function (key, type) {
+      if (!this.isValueShown(key)) {
+        return;
+      }
+      const guests = await this.optional(
+        this.fetch(`/api2/json/nodes/${this.item.node}/${type}`, this.options),
+      );
+      const list = guests?.data ?? [];
+      this[key] = guests && {
+        total: list.length,
+        running: list.filter((guest) => guest.status === "running").length,
+      };
     },
   },
 };

@@ -1,13 +1,14 @@
 <template>
   <Generic
     :item="item"
-    :subtitle="upsLoad && `${upsLoad}% UPS Load`"
+    :subtitle="upsLoad && `${upsLoad} UPS Load`"
     :status="status"
   />
 </template>
 
 <script>
 import service from "@/mixins/service.js";
+import { displayPercent } from "@/utils/format.js";
 
 export default {
   name: "PeaNUT",
@@ -15,7 +16,7 @@ export default {
   data: () => ({
     serverError: null,
     ups_status: "",
-    ups_load: 0,
+    ups_load: null,
   }),
   computed: {
     status: function () {
@@ -29,10 +30,9 @@ export default {
       return { state: "unknown", label: "unknown" };
     },
     upsLoad: function () {
-      if (this.ups_load) {
-        return this.ups_load.toFixed(1);
-      }
-      return "";
+      return !this.serverError && this.ups_load !== null
+        ? displayPercent(Number(this.ups_load))
+        : null;
     },
   },
   methods: {
@@ -42,7 +42,7 @@ export default {
       return this.load(
         this.fetch(`/api/v1/devices/${device}`).then((result) => {
           this.ups_status = result["ups.status"] || "";
-          this.ups_load = result["ups.load"] || 0;
+          this.ups_load = result["ups.load"] ?? null;
         }),
       );
     },

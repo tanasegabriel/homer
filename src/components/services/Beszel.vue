@@ -7,7 +7,7 @@
         :title="metric.label"
       >
         <span v-if="index" class="mx-1"> | </span>
-        <i :class="metric.icon"></i> {{ metric.value }}%
+        <i :class="metric.icon"></i> {{ displayPercent(metric.value, 0) }}
       </span>
     </template>
   </Generic>
@@ -15,6 +15,7 @@
 
 <script>
 import service from "@/mixins/service.js";
+import { displayPercent } from "@/utils/format.js";
 
 const SYSTEM_STATUS = {
   up: { state: "online", label: "online" },
@@ -70,6 +71,7 @@ export default {
     },
   },
   methods: {
+    displayPercent,
     fetchData: function () {
       const headers = this.item.api_token
         ? { Authorization: `Bearer ${this.item.api_token}` }

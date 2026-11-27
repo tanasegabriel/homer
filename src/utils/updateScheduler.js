@@ -40,10 +40,12 @@ class UpdateScheduler {
       component,
       interval: intervalSeconds,
       method: updateMethod,
-      lastUpdate: 0,
+      lastUpdate: this.tickCount,
     });
 
-    this.startGlobalTimer();
+    if (typeof document === "undefined" || !document.hidden) {
+      this.startGlobalTimer();
+    }
     console.log(
       `UpdateScheduler: Registered component with ${intervalSeconds}s interval`,
     );
@@ -69,8 +71,6 @@ class UpdateScheduler {
 
   startGlobalTimer() {
     if (!this.globalTimer) {
-      this.tickCount = 0;
-
       this.globalTimer = setInterval(() => {
         this.tickCount++;
         this.processUpdates();
@@ -84,7 +84,6 @@ class UpdateScheduler {
     if (this.globalTimer) {
       clearInterval(this.globalTimer);
       this.globalTimer = null;
-      this.tickCount = 0;
       console.log("UpdateScheduler: Global timer stopped");
     }
   }

@@ -14,7 +14,7 @@ export default {
   }),
   computed: {
     statsText() {
-      if (!this.stats) return null;
+      if (this.serverError || !this.stats) return null;
       return `${this.stats.books_read} / ${this.stats.total_books} books read`;
     },
     badges() {

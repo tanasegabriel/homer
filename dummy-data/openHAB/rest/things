@@ -1,0 +1,33 @@
+[
+  {
+    "label": "Living Room Lamp",
+    "UID": "hue:0210:bridge:lamp1",
+    "thingTypeUID": "hue:0210",
+    "editable": true,
+    "statusInfo": { "status": "ONLINE", "statusDetail": "NONE" }
+  },
+  {
+    "label": "Hue Bridge",
+    "UID": "hue:bridge:bridge",
+    "thingTypeUID": "hue:bridge",
+    "editable": true,
+    "statusInfo": { "status": "ONLINE", "statusDetail": "NONE" }
+  },
+  {
+    "label": "Weather",
+    "UID": "openweathermap:weather-and-forecast:api:local",
+    "thingTypeUID": "openweathermap:weather-and-forecast",
+    "editable": true,
+    "statusInfo": { "status": "ONLINE", "statusDetail": "NONE" }
+  },
+  {
+    "label": "Garage Door Sensor",
+    "UID": "zwave:device:controller:node5",
+    "thingTypeUID": "zwave:device",
+    "editable": true,
+    "statusInfo": {
+      "status": "OFFLINE",
+      "statusDetail": "COMMUNICATION_ERROR"
+    }
+  }
+]

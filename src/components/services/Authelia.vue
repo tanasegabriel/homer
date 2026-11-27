@@ -26,7 +26,7 @@ export default {
   methods: {
     fetchData: function () {
       return this.load(
-        this.fetch("/api/user/info", { cache: "no-cache" }).then(
+        this.fetch("/api/user/info").then(
           (response) => {
             const info = response?.data ?? {};
             this.signedIn = true;

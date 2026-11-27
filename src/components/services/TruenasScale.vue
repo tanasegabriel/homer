@@ -1,12 +1,5 @@
 <template>
-  <Generic :item="item" :status="reachabilityStatus()">
-    <template v-if="versionstring" #subtitle>
-      <span class="is-hidden-touch">{{ displayVersion(versionstring) }}</span>
-      <span class="is-hidden-desktop">
-        {{ displayVersion(versionstring.split("-").pop()) }}
-      </span>
-    </template>
-  </Generic>
+  <Generic :item="item" :subtitle="version" :status="reachabilityStatus()" />
 </template>
 
 <script>
@@ -21,22 +14,24 @@ export default {
     serverError: null,
     versionstring: null,
   }),
+  computed: {
+    version() {
+      return displayVersion(
+        this.versionstring?.replace(/^TrueNAS-(SCALE-)?/, ""),
+      );
+    },
+  },
   methods: {
-    displayVersion,
-    fetchData: async function () {
-      let headers = {};
-      if (this.item.api_token) {
-        headers["Authorization"] = `Bearer ${this.item.api_token}`;
-      }
-      this.fetch("/api/v2.0/system/version", { headers })
-        .then((response) => {
-          this.serverError = false;
-          this.versionstring = response;
-        })
-        .catch((e) => {
-          this.serverError = true;
-          console.error(e);
-        });
+    fetchData: function () {
+      const headers = this.item.api_token
+        ? { Authorization: `Bearer ${this.item.api_token}` }
+        : {};
+
+      return this.load(
+        this.fetch("/api/v2.0/system/version", { headers }).then((version) => {
+          this.versionstring = version;
+        }),
+      );
     },
   },
 };

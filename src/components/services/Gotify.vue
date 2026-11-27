@@ -4,7 +4,7 @@
 
 <script>
 import service from "@/mixins/service.js";
-import { capCount } from "@/utils/format.js";
+import { capCount, displayCount } from "@/utils/format.js";
 
 export default {
   name: "Gotify",
@@ -16,11 +16,10 @@ export default {
   }),
   computed: {
     messageCount: function () {
-      if (!this.messages) {
+      if (this.serverError || !this.messages) {
         return null;
       }
-      const count = capCount(this.messages);
-      return `${count} message${this.messages === 1 ? "" : "s"}`;
+      return displayCount(capCount(this.messages), "message");
     },
     status: function () {
       if (this.serverError || !this.health?.health) {
@@ -38,21 +37,22 @@ export default {
     },
   },
   methods: {
-    fetchData: function () {
-      const headers = { "X-Gotify-Key": this.item.apikey };
-
-      return this.load(
+    fetchData: async function () {
+      const requests = [
         this.fetch(`/health`).then((health) => {
           this.health = health;
         }),
-        // Needs a client token, and only feeds the subtitle, so a missing key
-        // must not make the whole card look unreachable.
-        this.fetch(`/message?limit=100`, { headers })
-          .then((messages) => {
-            this.messages = messages.messages.length;
-          })
-          .catch((e) => console.warn("Gotify messages unavailable:", e)),
-      );
+      ];
+      if (this.item.apikey) {
+        requests.push(this.fetchMessages());
+      }
+      await this.load(...requests);
+    },
+    fetchMessages: async function () {
+      const response = await this.fetch(`/message?limit=100`, {
+        headers: { "X-Gotify-Key": this.item.apikey },
+      });
+      this.messages = response.messages.length;
     },
   },
 };

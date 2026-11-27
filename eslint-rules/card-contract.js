@@ -1,6 +1,6 @@
 const SLOTS = ["icon", "subtitle", "aside", "badges"];
 
-const GROUPS = ["structure", "vocabulary", "mixin", "errors", "style"];
+const GROUPS = ["structure", "vocabulary", "mixin", "fetch", "errors", "style"];
 
 // `card-contract: off [groups] -- why`; naming no group turns every check off.
 const MARKER = /card-contract:\s*off([^\n\r]*)/;
@@ -23,10 +23,13 @@ const MIXIN_NAMES = [
   "fetch",
   "requireConfig",
   "connectionBadge",
+  "optional",
   "reachabilityStatus",
   "isValueShown",
   "initAutoUpdate",
   "getUpdateInterval",
+  "config",
+  "globalConfig",
 ];
 
 const FORBIDDEN_STYLE = [
@@ -242,14 +245,26 @@ export default {
 
       ExportDefaultDeclaration(node) {
         const component = node.declaration;
-        if (
-          component?.type !== "ObjectExpression" ||
-          !usesServiceMixin(component)
-        ) {
+        if (component?.type !== "ObjectExpression") {
           return;
         }
 
         const text = context.sourceCode.getText();
+        const nativeFetch =
+          /(^|[^.\w$]|\b(?:window|globalThis)\.)fetch\(/m.test(text);
+
+        if (!off.has("fetch") && nativeFetch) {
+          context.report({
+            node: component,
+            message:
+              "This card calls the native fetch(), which skips the proxy, headers and credentials the service mixin applies. Use this.fetch(), or exempt `fetch` with the reason this service needs its own transport.",
+          });
+        }
+
+        if (!usesServiceMixin(component)) {
+          return;
+        }
+
         const data = dataKeys(component);
         const computed = optionKeys(component, "computed");
 
@@ -297,25 +312,20 @@ export default {
           });
         }
 
-        if (/\bthis\.fetch\(/.test(text) && !showsServerError) {
-          const template = fragment.children.find(
-            (block) => block.type === "VElement" && block.name === "template",
-          );
-          const templateText = template
-            ? context.sourceCode.getText(template)
-            : "";
-          // A card that renders a list has no single card to hang a badge on.
-          const rendersList = /v-for=/.test(templateText);
-          // A chip nothing can move off its healthy value surfaces nothing.
-          const ownStatus =
-            /:status=/.test(templateText) &&
-            /(\.catch\(|\bcatch\s*\()/.test(text);
-
-          if (!ownStatus && !rendersList) {
+        if (/\bthis\.fetch\(/.test(text) || nativeFetch) {
+          if (!/\bthis\.load\(/.test(text)) {
             context.report({
               node: component,
               message:
-                "This card calls an API but surfaces no failure. Add this.connectionBadge() to its badges, or a :status chip driven from a catch; otherwise an unreachable service looks identical to an idle one.",
+                "This card makes requests but never calls this.load(). Wrap its requests in this.load(...), which logs failures and sets serverError for the card to show.",
+            });
+          }
+
+          if (!showsServerError) {
+            context.report({
+              node: component,
+              message:
+                "This card calls an API but never shows a failure. Drive its :status chip from reachabilityStatus(), or add this.connectionBadge() to its badges; otherwise an unreachable service looks identical to an idle one.",
             });
           }
         }
@@ -341,6 +351,18 @@ export default {
                 node: root ?? block,
                 message:
                   "A service card must render a single <Generic> as its template root.",
+              });
+              continue;
+            }
+
+            const repeated = root.startTag.attributes.some(
+              (attr) => attr.directive && attr.key.name.name === "for",
+            );
+            if (repeated) {
+              context.report({
+                node: root,
+                message:
+                  'A service card must render a single card: v-for on the root <Generic> renders one root per entry, so the classes Homer adds to the card (its layout column, `class`) go nowhere. To render several cards, set inheritAttrs: false, pass v-bind="$attrs" to each <Generic>, and exempt `structure` with a reason.',
               });
               continue;
             }

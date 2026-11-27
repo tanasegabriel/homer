@@ -95,8 +95,14 @@ export default {
         tone: "danger",
       };
     },
+    optional(request) {
+      return request.catch((e) => {
+        console.warn(e);
+        return null;
+      });
+    },
     fetch: function (path, init, json = true) {
-      let options = {};
+      let options = { cache: "no-cache" };
 
       if (this.proxy?.useCredentials) {
         options.credentials = "include";

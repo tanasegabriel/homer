@@ -34,15 +34,8 @@ export default {
       return this.load(
         this.fetch(`/api/v1/health?apikey=${this.item.apikey}`).then(
           (health) => {
-            this.warnings = 0;
-            this.errors = 0;
-            for (var i = 0; i < health.length; i++) {
-              if (health[i].type == "warning") {
-                this.warnings++;
-              } else if (health[i].type == "error") {
-                this.errors++;
-              }
-            }
+            this.warnings = health.filter((h) => h.type === "warning").length;
+            this.errors = health.filter((h) => h.type === "error").length;
           },
         ),
       );

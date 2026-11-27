@@ -1,10 +1,10 @@
 <template>
   <Generic :item="item" :badges="badges">
-    <template #subtitle>
+    <template v-if="!serverError" #subtitle>
       <template v-for="(statItem, index) in item.stats" :key="statItem">
         <span v-if="stats[statItem]" :title="stats[statItem].label">
-          <i :class="stats[statItem].icon"></i> {{ stats[statItem].value }}
-          {{ stats[statItem].unit }}
+          <i :class="stats[statItem].icon"></i>
+          {{ displayPercent(stats[statItem].value) }}
           <span v-if="index != item.stats.length - 1"> / </span>
         </span>
       </template>
@@ -14,6 +14,7 @@
 
 <script>
 import service from "@/mixins/service.js";
+import { displayPercent } from "@/utils/format.js";
 
 export default {
   name: "Glances",
@@ -35,29 +36,26 @@ export default {
             value: response.load,
             label: "System load",
             icon: "fa-solid fa-bolt",
-            unit: "%",
           };
           this.stats["cpu"] = {
             value: response.cpu,
             label: `CPU usage (${response.cpu_name})`,
             icon: "fa-solid fa-microchip",
-            unit: "%",
           };
           this.stats["mem"] = {
             value: response.mem,
             label: `RAM usage`,
             icon: "fa-solid fa-memory",
-            unit: "%",
           };
           this.stats["swap"] = {
             value: response.swap,
             label: `Swap usage`,
             icon: "fa-solid fa-file-arrow-down",
-            unit: "%",
           };
         }),
       );
     },
+    displayPercent,
   },
 };
 </script>

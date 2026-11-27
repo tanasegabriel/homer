@@ -4,11 +4,7 @@
     :subtitle="unreadText"
     :status="status"
     :badges="badges"
-  >
-    <template v-if="loading" #aside>
-      <i class="fa fa-circle-notch fa-spin"></i>
-    </template>
-  </Generic>
+  />
 </template>
 
 <script>
@@ -21,14 +17,13 @@ export default {
     unreadEntries: 0,
     unreadFeeds: 0,
     serverError: null,
-    loading: true,
   }),
   computed: {
     style: function () {
       return this.item.style ?? "status";
     },
     unreadText: function () {
-      if (!this.unreadEntries) {
+      if (this.serverError || !this.unreadEntries) {
         return null;
       }
       return this.unreadFeeds < 2
@@ -36,18 +31,16 @@ export default {
         : `${this.unreadEntries} unread in ${this.unreadFeeds} feeds`;
     },
     status: function () {
-      if (this.loading || this.style !== "status") {
+      if (this.style !== "status") {
         return null;
       }
-      if (this.serverError) {
-        return { state: "offline", label: "error" };
+      if (this.serverError === false && this.unreadEntries > 0) {
+        return { state: "warning", label: "unread" };
       }
-      return this.unreadEntries > 0
-        ? { state: "warning", label: "unread" }
-        : { state: "online", label: "online" };
+      return this.reachabilityStatus();
     },
     badges: function () {
-      if (this.loading || this.style === "status") {
+      if (this.style === "status") {
         return [];
       }
       return [
@@ -68,7 +61,7 @@ export default {
         "X-Auth-Token": this.item.apikey,
       };
 
-      await this.load(
+      return this.load(
         this.fetch("/v1/feeds/counters", { headers }).then((counters) => {
           const unreads = Object.values(counters.unreads || {});
           this.unreadFeeds = unreads.length;
@@ -78,7 +71,6 @@ export default {
           );
         }),
       );
-      this.loading = false;
     },
   },
 };

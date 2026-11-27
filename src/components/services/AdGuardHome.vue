@@ -1,42 +1,37 @@
 <template>
-  <Generic
-    :item="item"
-    :subtitle="stats && `${percentage}% blocked`"
-    :status="protection"
-  />
+  <Generic :item="item" :subtitle="blocked" :status="status" />
 </template>
 
 <script>
 import service from "@/mixins/service.js";
+import { displayPercent } from "@/utils/format.js";
 
 const PROTECTION = {
   enabled: { state: "online", label: "enabled" },
   disabled: { state: "warning", label: "disabled" },
-  unknown: { state: "unknown", label: "unknown" },
 };
 
 export default {
   name: "AdGuardHome",
   mixins: [service],
-  data: () => {
-    return {
-      serverStatus: null,
-      stats: null,
-    };
-  },
+  data: () => ({
+    serverStatus: null,
+    stats: null,
+    serverError: null,
+  }),
   computed: {
-    percentage: function () {
-      if (this.stats) {
-        return (
-          (this.stats.num_blocked_filtering * 100) /
-          this.stats.num_dns_queries
-        ).toFixed(2);
+    blocked: function () {
+      if (this.serverError || !this.stats) {
+        return null;
       }
-      return "";
+      const percent = displayPercent(
+        (this.stats.num_blocked_filtering * 100) / this.stats.num_dns_queries,
+      );
+      return percent && `${percent} blocked`;
     },
-    protection: function () {
-      if (!this.serverStatus) {
-        return PROTECTION.unknown;
+    status: function () {
+      if (this.serverError || !this.serverStatus) {
+        return this.reachabilityStatus();
       }
       return this.serverStatus.protection_enabled
         ? PROTECTION.enabled
@@ -44,20 +39,22 @@ export default {
     },
   },
   methods: {
-    fetchData: async function () {
-      this.fetch("/control/status")
-        .then((status) => {
+    fetchData: function () {
+      const requests = [
+        this.fetch("/control/status").then((status) => {
           this.serverStatus = status;
-        })
-        .catch((e) => console.error(e));
+        }),
+      ];
 
       if (!this.item.subtitle) {
-        this.fetch("/control/stats")
-          .then((stats) => {
+        requests.push(
+          this.fetch("/control/stats").then((stats) => {
             this.stats = stats;
-          })
-          .catch((e) => console.error(e));
+          }),
+        );
       }
+
+      return this.load(...requests);
     },
   },
 };

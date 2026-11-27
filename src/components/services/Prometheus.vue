@@ -1,13 +1,10 @@
 <template>
-  <Generic
-    :item="item"
-    :subtitle="api && `${count} ${level} alerts`"
-    :status="status"
-  />
+  <Generic :item="item" :subtitle="alerts" :status="status" />
 </template>
 
 <script>
 import service from "@/mixins/service.js";
+import { displayCount } from "@/utils/format.js";
 
 const AlertsStatus = Object.freeze({
   firing: "firing",
@@ -37,6 +34,12 @@ export default {
     },
   }),
   computed: {
+    alerts: function () {
+      if (this.serverError !== false) {
+        return null;
+      }
+      return displayCount(this.count, `${this.level} alert`);
+    },
     count: function () {
       return (
         this.countFiring() || this.countPending() || this.countInactive() || 0
@@ -51,7 +54,7 @@ export default {
       return AlertsStatus.inactive;
     },
     status: function () {
-      if (this.serverError) {
+      if (this.serverError !== false) {
         return this.reachabilityStatus();
       }
       return this.api && { state: ALERT_STATE[this.level], label: this.count };
@@ -84,7 +87,7 @@ export default {
     countInactive: function () {
       if (this.api) {
         return this.api.data?.alerts?.filter(
-          (alert) => alert.state === AlertsStatus.pending,
+          (alert) => alert.state === AlertsStatus.inactive,
         ).length;
       }
       return 0;

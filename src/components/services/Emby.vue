@@ -1,52 +1,61 @@
 <template>
-  <Generic :item="item" :subtitle="embyCount" :status="status" />
+  <Generic :item="item" :subtitle="embyCount" :status="reachabilityStatus()" />
 </template>
 
 <script>
 import service from "@/mixins/service.js";
+import { displayCount } from "@/utils/format.js";
+
+const LIBRARY_STATS = {
+  music: (counts) =>
+    `${displayCount(counts.SongCount, "song")}, ${displayCount(counts.AlbumCount, "album")}`,
+  movies: (counts) => displayCount(counts.MovieCount, "movie"),
+  series: (counts) =>
+    `${displayCount(counts.EpisodeCount, "ep")}, ${displayCount(counts.SeriesCount, "series", "series")}`,
+};
 
 export default {
   name: "Emby",
   mixins: [service],
   data: () => ({
-    status: null,
-    albumCount: 0,
-    songCount: 0,
-    movieCount: 0,
-    seriesCount: 0,
-    episodeCount: 0,
+    counts: null,
+    serverError: null,
   }),
   computed: {
+    libraryTypes: function () {
+      return [].concat(this.item.libraryType ?? []);
+    },
     embyCount: function () {
-      if (this.item.libraryType === "music")
-        return `${this.songCount} songs, ${this.albumCount} albums`;
-      else if (this.item.libraryType === "movies")
-        return `${this.movieCount} movies`;
-      else if (this.item.libraryType === "series")
-        return `${this.episodeCount} eps, ${this.seriesCount} series`;
-      else return `wrong library type 💀`;
+      const types = this.libraryTypes;
+      if (
+        !types.length ||
+        types.some((type) => !Object.hasOwn(LIBRARY_STATS, type))
+      ) {
+        return `wrong library type 💀`;
+      }
+      if (this.serverError || !this.counts) {
+        return null;
+      }
+      return types.map((type) => LIBRARY_STATS[type](this.counts)).join(", ");
     },
   },
   methods: {
-    fetchData: async function () {
-      const serverInfo = await this.fetchServerStatus();
-
-      if (!this.item.subtitle) {
-        this.fetchServerMediaStats(serverInfo);
-      }
-    },
-    fetchServerStatus: async function () {
-      return this.fetch("/System/info/public")
-        .then((response) => {
-          if (!response.Id) throw new Error();
-          this.status = { state: "online", label: "running" };
-          return response;
-        })
-        .catch((e) => {
-          console.error(e);
-          this.status = { state: "offline", label: "dead" };
-          return null;
-        });
+    fetchData: function () {
+      return this.load(
+        this.fetch("/System/info/public").then((info) => {
+          if (!info?.Id) {
+            throw new Error("Unexpected answer from /System/info/public");
+          }
+          if (this.item.subtitle) {
+            return;
+          }
+          return this.fetch("/items/counts", {
+            headers: this.authHeaders(info),
+          }).then((counts) => {
+            this.counts = counts;
+          });
+        }),
+      );
     },
     // Jellyfin 12 no longer accepts X-Emby-Token.
     authHeaders: function (serverInfo) {
@@ -59,23 +68,6 @@ export default {
       return legacyAuth
         ? { "X-Emby-Token": this.item.apikey }
         : { Authorization: `MediaBrowser Token="${this.item.apikey}"` };
-    },
-    fetchServerMediaStats: async function (serverInfo) {
-      const headers = this.authHeaders(serverInfo);
-
-      const data = await this.fetch("/items/counts", { headers }).catch((e) => {
-        console.error(e);
-      });
-
-      if (!data) {
-        return;
-      }
-
-      this.albumCount = data.AlbumCount;
-      this.songCount = data.SongCount;
-      this.movieCount = data.MovieCount;
-      this.seriesCount = data.SeriesCount;
-      this.episodeCount = data.EpisodeCount;
     },
   },
 };
