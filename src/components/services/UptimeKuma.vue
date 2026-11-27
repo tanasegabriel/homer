@@ -34,12 +34,9 @@ export default {
       if (this.serverError) {
         return this.reachabilityStatus();
       }
-      return (
-        this.state && {
-          state: PAGE_STATE[this.state],
-          label: displayPercent(this.uptime),
-        }
-      );
+      return this.state
+        ? { state: PAGE_STATE[this.state], label: displayPercent(this.uptime) }
+        : null;
     },
     lastHeartBeatList: function () {
       let result = {};

@@ -1,0 +1,58 @@
+name: Stale
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  stale:
+    name: Stale
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      actions: write
+    env:
+      DRY_RUN: ${{ vars.STALE_DRY_RUN != 'false' }}
+      EXEMPT: help wanted,good first issue,Beta tester wanted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Label issues waiting for a reply
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          MAINTAINERS: tanasegabriel bastienwirtz
+        with:
+          script: |
+            const { default: sync } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/waiting-for-reply.js`);
+            await sync({ github, context, core, env: process.env });
+      - name: Close unanswered issues
+        uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
+        with:
+          only-issue-labels: waiting-for-reply
+          exempt-issue-labels: ${{ env.EXEMPT }}
+          days-before-issue-stale: 30
+          days-before-issue-close: 14
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          stale-issue-label: stale
+          close-issue-reason: not_planned
+          operations-per-run: 100
+          debug-only: ${{ env.DRY_RUN }}
+          stale-issue-message: >
+            Hey 👋 We're still waiting for a reply on this one. It will be closed in 14 days
+            if there's no activity, but any comment keeps it open. Thanks!
+          close-issue-message: >
+            Closing this for now, as we haven't heard back. If it's still needed, just comment
+            here and we'll reopen it. Thanks!

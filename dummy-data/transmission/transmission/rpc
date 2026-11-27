@@ -1,0 +1,10 @@
+{
+  "result": "success",
+  "arguments": {
+    "activeTorrentCount": 3,
+    "pausedTorrentCount": 1,
+    "torrentCount": 4,
+    "downloadSpeed": 1250000,
+    "uploadSpeed": 340000
+  }
+}

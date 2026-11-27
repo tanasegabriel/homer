@@ -48,6 +48,7 @@ The general process to submit a contribution is as follow:
 1. Take a look at the [development guideline](https://github.com/homer-dashboard/homer/blob/main/docs/development.md).
 2. Create your own fork of the code
 3. Do the changes in your fork
-4. Make sure to fill the [pull request description](https://github.com/homer-dashboard/homer/blob/main/.github/PULL_REQUEST_TEMPLATE.md) properly.
+4. Run `pnpm format`, `pnpm lint`, `pnpm test` and `pnpm build`
+5. Make sure to fill the [pull request description](https://github.com/homer-dashboard/homer/blob/main/.github/PULL_REQUEST_TEMPLATE.md) properly.
 
 ### Happy coding :metal:
