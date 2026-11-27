@@ -12,6 +12,7 @@ pnpm mock         # Start mock API server for testing service integrations
 pnpm build        # Build for production
 pnpm preview      # Preview production build
 pnpm lint         # Run ESLint with auto-fix
+pnpm format       # Format with Prettier (CI fails on unformatted code)
 pnpm test         # Run the unit and card tests (Vitest)
 pnpm test:demo    # Render the built demo in headless Chrome and check every card loads (after pnpm build; set CHROME_BIN if Chrome is not google-chrome on PATH)
 ```

@@ -14,7 +14,7 @@ Fixes # (issue)
 ## Checklist:
 
 - [ ] I've read & comply with the [contributing guidelines](https://github.com/homer-dashboard/homer/blob/main/CONTRIBUTING.md)
-- [ ] `pnpm lint`, `pnpm test` and `pnpm build` pass
+- [ ] `pnpm format`, `pnpm lint`, `pnpm test` and `pnpm build` pass
 - [ ] A new smart card ships a sample in `dummy-data/` and an entry in `dummy-data/demo.yml`
 - [ ] I have tested my code for new features & regressions on both mobile & desktop devices, using the latest version of major browsers.
 - [ ] I have made corresponding changes to the documentation (`README.md`).

@@ -11,7 +11,7 @@
     "lint": "eslint . --fix --cache",
     "test": "vitest run",
     "test:demo": "node tests/demo-smoke.mjs",
-    "format": "prettier --write --experimental-cli src/"
+    "format": "prettier --write --experimental-cli src eslint-rules tests scripts vite.config.js dummy-data/resolve.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",
