@@ -199,6 +199,18 @@
         "content": {
           "type": "string",
           "description": "HTML content for the message box"
+        },
+        "useCredentials": {
+          "type": "boolean",
+          "description": "Send cookies & authorization headers when fetching the message url. The global proxy settings don't apply to the message."
+        },
+        "headers": {
+          "$ref": "#/definitions/Headers",
+          "description": "Send custom headers when fetching the message url."
+        },
+        "sanitize": {
+          "type": "boolean",
+          "description": "Sanitize the HTML returned by the message url (default: true). Setting it to false is discouraged: whoever controls the endpoint can then run code on your dashboard."
         }
       },
       "title": "Messagebox"
@@ -382,8 +394,26 @@
   },
   "properties": {
     "externalConfig": {
-      "type": "string",
-      "description": "Use external configuration file. Using this will ignore remaining config in this file externalConfig: https://example.com/server-luci/config.yaml"
+      "description": "Use external configuration file. Using this will ignore remaining config in this file externalConfig: https://example.com/server-luci/config.yaml",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["url"],
+          "properties": {
+            "url": { "type": "string" },
+            "useCredentials": {
+              "type": "boolean",
+              "description": "Send cookies & authorization headers when fetching the external configuration file."
+            },
+            "headers": {
+              "$ref": "#/definitions/Headers",
+              "description": "Send custom headers when fetching the external configuration file."
+            }
+          }
+        }
+      ]
     },
     "title": {
       "type": "string",

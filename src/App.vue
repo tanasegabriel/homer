@@ -105,6 +105,7 @@
 <script>
 import { parse } from "yaml";
 import merge from "lodash.merge";
+import fetchOptions from "@/utils/fetchOptions.js";
 
 import Navbar from "./components/Navbar.vue";
 import GetStarted from "./components/GetStarted.vue";
@@ -140,6 +141,7 @@ export default {
     return {
       loaded: false,
       currentPage: null,
+      builds: 0,
       configNotFound: false,
       config: null,
       services: null,
@@ -171,22 +173,27 @@ export default {
       }
     },
     buildDashboard: async function () {
+      const build = ++this.builds;
+      const page = window.location.hash.substring(1) || "default";
       const defaults = parse(defaultConfig);
       let config;
+      let configNotFound = false;
       try {
-        config = await this.getConfig();
-        this.currentPage = window.location.hash.substring(1) || "default";
-
-        if (this.currentPage !== "default") {
-          let pageConfig = await this.getConfig(
-            `assets/${this.currentPage}.yml`,
-          );
-          config = Object.assign(config, pageConfig);
+        const configs = [await this.getConfig()];
+        if (page !== "default") {
+          configs.push(await this.getConfig(`assets/${page}.yml`));
         }
+        configNotFound = configs.includes(null);
+        config = Object.assign({}, ...configs);
       } catch (error) {
         console.log(error);
         config = this.handleErrors("⚠️ Error loading configuration", error);
       }
+      if (build !== this.builds) {
+        return;
+      }
+      this.configNotFound = configNotFound;
+      this.currentPage = page;
       this.config = merge(defaults, config);
       this.services = this.config.services;
 
@@ -206,28 +213,48 @@ export default {
         this.createStylesheet(stylesheet);
       }
     },
-    getConfig: function (path = "assets/config.yml") {
-      return fetch(path, { cache: "no-cache" }).then((response) => {
-        if (response.status == 404 || response.redirected) {
-          this.configNotFound = true;
-          return {};
+    getConfig: function (source = "assets/config.yml", chain = []) {
+      const { url, ...item } =
+        typeof source === "string" ? { url: source } : source;
+      const address = new URL(url, window.location.href).href;
+      if (chain.includes(address)) {
+        throw Error(`externalConfig loops back to ${url}`);
+      }
+      const options = fetchOptions({ item, init: { cache: "no-cache" } });
+
+      return fetch(url, options).then((response) => {
+        if (!chain.length && (response.status == 404 || response.redirected)) {
+          return null;
         }
 
         if (!response.ok) {
-          throw Error(`${response.statusText}: ${response.body}`);
+          throw Error(`HTTP ${response.status} for ${url}`);
         }
 
         const that = this;
         return response
           .text()
           .then((body) => {
+            if (chain.length && /^\s*<[!a-z]/i.test(body)) {
+              throw Error(
+                `externalConfig ${url} returned a web page, likely a login page`,
+              );
+            }
             return parse(body, { merge: true });
           })
           .then(function (config) {
-            if (config.externalConfig) {
-              return that.getConfig(config.externalConfig);
+            if (
+              chain.length &&
+              (typeof config !== "object" || Array.isArray(config))
+            ) {
+              throw Error(
+                `externalConfig ${url} didn't return a configuration`,
+              );
             }
-            return config;
+            if (config?.externalConfig) {
+              return that.getConfig(config.externalConfig, [...chain, address]);
+            }
+            return config ?? {};
           });
       });
     },

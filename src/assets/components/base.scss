@@ -224,6 +224,15 @@
         }
       }
 
+      .is-contained {
+        contain: paint;
+        overflow-clip-margin: 20px;
+
+        .message-body {
+          overflow-x: auto;
+        }
+      }
+
       .column.is-auto {
         min-width: fit-content;
       }
